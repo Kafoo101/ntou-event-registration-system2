@@ -43,7 +43,9 @@ Includes **all system permissions**, plus:
 - View full user list
 - Modify user roles (User ↔ Advanced User)
 - Delete users  
-⚠️ Admin **cannot promote or demote another administrator**
+
+**Restriction:**  
+Admin **cannot promote or demote another administrator**
 
 ---
 
@@ -103,6 +105,12 @@ Includes **all system permissions**, plus:
 
 ---
 
+## 📦 Repository
+Root GitHub Repository:  
+https://github.com/icygit6/ntou-event-registration-system2
+
+---
+
 ## 🚀 Deployment
 The system is deployed using **Vercel**.
 
@@ -121,11 +129,11 @@ https://ntou-event-registration-system2.vercel.app/index.html
 ---
 
 ## 👨‍💻 Contributors
-  - 康德明 (01257166)
-  - 許家豪 (01257168)
-  - 洪振銘 (01257068)
-  - 林彥汶 (01257067)
-  - 姚俊吉 (01257167)
+- 康德明 (01257166)
+- 許家豪 (01257168)
+- 洪振銘 (01257068)
+- 林彥汶 (01257067)
+- 姚俊吉 (01257167)
 
 ---
 
