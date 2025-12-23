@@ -23,10 +23,19 @@ let db;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5500',
-  process.env.FRONTEND_URL || 'http://localhost:3000'
+  process.env.FRONTEND_URL
 ];
 
-app.use(cors());
+app.use(cors({
+  origin: function(origin, callback){
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = `CORS policy does not allow access from this origin.`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  }
+}));
 // Connect to MongoDB
 async function connectDB() {
     try {
@@ -222,63 +231,26 @@ app.get('/users', async (req, res) => {
 app.get('/events', async (req, res) => {
     try {
         const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999); //set 'today' events regarded as past events
-        
+        todayEnd.setHours(23, 59, 59, 999);
+
         const events = await db.collection('events').aggregate([
-            {
-                $match: {
-                    $expr: { $gt: [ { $toDate: "$date" }, todayEnd ] } // only future events
-                }
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'createdBy',
-                    foreignField: 'id',
-                    as: 'owner'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'applications',
-                    localField: 'id',
-                    foreignField: 'eventId',
-                    as: 'applications'
-                }
-            },
-            {
-                $addFields: {
-                    ownerEmail: {
-                        $ifNull: [
-                            { $arrayElemAt: ['$owner.email', 0] },
-                            null
-                        ]
-                    },
-                    participantCount: {
-                        $size: {
-                            $filter: {
-                                input: '$applications',
-                                as: 'app',
-                                cond: { $eq: ['$$app.status', 1] }
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    owner: 0,
-                    applications: 0
-                }
-            }
+            { $match: { $expr: { $gt: [ { $toDate: "$date" }, todayEnd ] } } },
+            { $lookup: { from: 'users', localField: 'createdBy', foreignField: 'id', as: 'owner' } },
+            { $lookup: { from: 'applications', localField: 'id', foreignField: 'eventId', as: 'applications' } },
+            { $addFields: {
+                ownerEmail: { $ifNull: [ { $arrayElemAt: ['$owner.email', 0] }, null ] },
+                participantCount: { $size: { $filter: { input: '$applications', as: 'app', cond: { $eq: ['$$app.status', 1] } } } }
+            }},
+            { $project: { owner: 0, applications: 0 } }
         ]).toArray();
-        
+
         res.json(events);
     } catch (err) {
-        console.error('Fetch events error:', err);
-        res.status(500).json({ error: 'Failed to fetch events', details: err.message });
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch events' });
     }
 });
+
 
 // ---------- Get events for management (filtered by owner for advanced users) ----------
 app.get('/manage/events', verifyToken, async (req, res) => {

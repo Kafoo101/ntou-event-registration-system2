@@ -1,4 +1,4 @@
-const API_URL = 'https://ntou-event-registration-system2-hggmckqj8-kafoos-projects.vercel.app';
+const API_URL = 'https://ntou-event-registration-system2.vercel.app';
 const errorMsg = document.getElementById('errorMsg');
 const successMsg = document.getElementById('successMsg');
 const nicknameInput = document.getElementById('nickname');
