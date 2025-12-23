@@ -27,8 +27,7 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
+    origin: 'https://ntou-event-registration-system2-8jgksj4n3-kafoos-projects.vercel.app'
 }));
 // Connect to MongoDB
 async function connectDB() {
