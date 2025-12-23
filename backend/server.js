@@ -52,17 +52,6 @@ async function connectDB() {
   return cachedDb;
 }
 
-/*async function connectDB() {
-    try {
-        await client.connect();
-        db = client.db(process.env.DB_NAME || 'eventRegistration');
-        console.log(`✅ Connected to MongoDB Atlas DB: ${db.databaseName}`);
-    } catch (err) {
-        console.error("❌ Database connection failed:", err);
-        process.exit(1); // stop if DB fails
-    }
-}*/
-
 // Wait for DB connection before starting server
 connectDB().then(() => {
     app.listen(port, () => {
@@ -75,6 +64,7 @@ connectDB().then(() => {
 // ---------- Endpoint to get next incremental ID ----------
 app.get('/nextId', async (req, res) => {
     try {
+        const db = await connectDB();
         const result = await db.collection('counters').findOneAndUpdate(
             { _id: 'userId' },
             { $inc: { seq: 1 } },
@@ -99,6 +89,7 @@ app.get('/nextId', async (req, res) => {
 // ---------- Register endpoint ----------
 app.post('/register', async (req, res) => {
     try {
+        const db = await connectDB();
         const { id, nickname, email_or_phone, password, occupation } = req.body;
 
         // Check if email or phone already exists
@@ -140,6 +131,7 @@ app.post('/register', async (req, res) => {
 // -------------Sign In Endpoint-------------
 app.post('/signin', async (req, res) => {
     try {
+        const db = await connectDB();
         const { email_or_phone, password } = req.body;
 
         const user = await db.collection('users').findOne({ email: email_or_phone });
@@ -179,6 +171,7 @@ function verifyToken(req, res, next) {
 // -------------Verify Old Password-------------
 app.post('/users/verify-password', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const userId = req.user.id;
         const { oldPassword } = req.body;
 
@@ -204,6 +197,7 @@ app.post('/users/verify-password', verifyToken, async (req, res) => {
 // -------------Change Password Endpoint-------------
 app.patch('/users/update-password', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const userId = req.user.id; // from JWT payload
         const { newPassword } = req.body;
 
@@ -234,6 +228,7 @@ app.patch('/users/update-password', verifyToken, async (req, res) => {
 // ---------- Get User for User List ------------
 app.get('/users', async (req, res) => {
     try{
+        const db = await connectDB();
         const users = await db.collection('users').find().toArray();
         res.json(users);
     } catch (err) {
@@ -246,56 +241,17 @@ app.get('/users', async (req, res) => {
 app.get('/events', async (req, res) => {
   try {
     const db = await connectDB();
-
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    const todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
 
     const events = await db.collection('events').aggregate([
-      {
-        $match: {
-          $expr: {
-            $gt: [{ $toDate: "$date" }, todayEnd]
-          }
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'createdBy',
-          foreignField: 'id',
-          as: 'owner'
-        }
-      },
-      {
-        $lookup: {
-          from: 'applications',
-          localField: 'id',
-          foreignField: 'eventId',
-          as: 'applications'
-        }
-      },
-      {
-        $addFields: {
-          ownerEmail: {
-            $ifNull: [{ $arrayElemAt: ['$owner.email', 0] }, null]
-          },
-          participantCount: {
-            $size: {
-              $filter: {
-                input: '$applications',
-                as: 'app',
-                cond: { $eq: ['$$app.status', 1] }
-              }
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          owner: 0,
-          applications: 0
-        }
-      }
+      { $match: { $expr: { $gt: [{ $toDate: "$date" }, todayEnd] } } },
+      { $lookup: { from: 'users', localField: 'createdBy', foreignField: 'id', as: 'owner' } },
+      { $lookup: { from: 'applications', localField: 'id', foreignField: 'eventId', as: 'applications' } },
+      { $addFields: {
+          ownerEmail: { $ifNull: [{ $arrayElemAt: ['$owner.email',0] }, null] },
+          participantCount: { $size: { $filter: { input:'$applications', as:'app', cond:{$eq:['$$app.status',1]} } } }
+      }},
+      { $project: { owner:0, applications:0 } }
     ]).toArray();
 
     res.json(events);
@@ -305,10 +261,10 @@ app.get('/events', async (req, res) => {
   }
 });
 
-
 // ---------- Get events for management (filtered by owner for advanced users) ----------
 app.get('/manage/events', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const userRole = req.user.role;
         const userId = req.user.id;
         
@@ -376,6 +332,7 @@ app.get('/manage/events', verifyToken, async (req, res) => {
 // ---------- Get my events (for advanced users) ----------
 app.get('/my-events', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const userRole = req.user.role;
         const userId = req.user.id;
         
@@ -422,6 +379,7 @@ app.get('/my-events', verifyToken, async (req, res) => {
 // ---------- Get single event by ID ----------
 app.get('/events/:id', async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         
         const events = await db.collection('events').aggregate([
@@ -485,6 +443,7 @@ app.get('/events/:id', async (req, res) => {
 //----------- Get Applications (All events user has applied for) ----------
 app.get('/applications', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const userId = req.user.id;
         const applications = await db.collection('events').aggregate([
             { 
@@ -547,6 +506,7 @@ app.get('/applications', verifyToken, async (req, res) => {
 //----------- Get History ----------
 app.get('/history', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const now = new Date();
         const history = await db.collection('events').aggregate([
             { 
@@ -607,6 +567,7 @@ app.get('/history', verifyToken, async (req, res) => {
 //----------- Get Past Events ----------\
 app.get('/past', async (req, res) => {
     try {
+        const db = await connectDB();
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
 
@@ -672,6 +633,7 @@ app.get('/past', async (req, res) => {
 // ---------- Get all participant of an Event ----------
 app.get('/eventParticipants/:id', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         const userId = req.user.id;
         const userRole = req.user.role;
@@ -704,6 +666,7 @@ app.get('/eventParticipants/:id', verifyToken, async (req, res) => {
 // ---------- Create new event ----------
 app.post('/events', verifyToken, upload.single('image'), async (req, res) => {
     try {
+        const db = await connectDB();
         const { title, date, location, permission, participationLimit, description } = req.body;
 
         if (!title || !date || !location || !participationLimit) {
@@ -744,6 +707,7 @@ app.post('/events', verifyToken, upload.single('image'), async (req, res) => {
 // ---------- Update event ----------
 app.put('/events/:id', verifyToken, upload.single('image'), async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         const { title, date, location, permission, participationLimit, description, removeImage } = req.body;
         const userId = req.user.id;
@@ -852,6 +816,7 @@ app.put('/events/:id', verifyToken, upload.single('image'), async (req, res) => 
 // fetch
 app.get('/users/:id/retrieve', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
 
         const user = await db.collection('users').findOne(
@@ -873,6 +838,7 @@ app.get('/users/:id/retrieve', verifyToken, async (req, res) => {
 // update
 app.put('/users/:id/send', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         const { name, role, occupation, isSelf } = req.body;
 
@@ -913,6 +879,7 @@ app.put('/users/:id/send', verifyToken, async (req, res) => {
 // ---------- Delete User ------------
 app.delete('/users/:id', async (req, res) => {
     try {
+        const db = await connectDB();
         const mongoId = req.params.id;
         const objectId = new ObjectId(mongoId);
 
@@ -960,6 +927,7 @@ app.delete('/users/:id', async (req, res) => {
 // ---------- Delete event ----------
 app.delete('/events/:id', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         const userId = req.user.id;
         const userRole = req.user.role;
@@ -989,6 +957,7 @@ app.delete('/events/:id', verifyToken, async (req, res) => {
 // Check if current user has applied for an event
 app.get('/events/:id/applied', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         const userId = req.user.id;
 
@@ -1016,6 +985,7 @@ app.get('/events/:id/applied', verifyToken, async (req, res) => {
 // ---------- Apply for an event ----------
 app.post('/events/:id/apply', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         const userId = req.user.id;
         let applyStatus = 1;
@@ -1055,6 +1025,7 @@ app.post('/events/:id/apply', verifyToken, async (req, res) => {
 // ---------- Retract application ----------
 app.patch('/events/:id/apply', verifyToken, async (req, res) => {
     try {
+        const db = await connectDB();
         const { id } = req.params;
         const userId = req.user.id;
 
