@@ -40,7 +40,19 @@ app.use(cors({
   }
 }));
 // Connect to MongoDB
+let cachedDb = null;
 async function connectDB() {
+  if (cachedDb) return cachedDb;
+
+  const client = new MongoClient(process.env.MONGO_URI);
+  await client.connect();
+  cachedDb = client.db("eventRegistration");
+
+  console.log("✅ MongoDB connected");
+  return cachedDb;
+}
+
+/*async function connectDB() {
     try {
         await client.connect();
         db = client.db(process.env.DB_NAME || 'eventRegistration');
@@ -49,7 +61,7 @@ async function connectDB() {
         console.error("❌ Database connection failed:", err);
         process.exit(1); // stop if DB fails
     }
-}
+}*/
 
 // Wait for DB connection before starting server
 connectDB().then(() => {
@@ -232,26 +244,65 @@ app.get('/users', async (req, res) => {
 
 // ---------- Get ongoing events ----------
 app.get('/events', async (req, res) => {
-    try {
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
+  try {
+    const db = await getDB();
 
-        const events = await db.collection('events').aggregate([
-            { $match: { $expr: { $gt: [ { $toDate: "$date" }, todayEnd ] } } },
-            { $lookup: { from: 'users', localField: 'createdBy', foreignField: 'id', as: 'owner' } },
-            { $lookup: { from: 'applications', localField: 'id', foreignField: 'eventId', as: 'applications' } },
-            { $addFields: {
-                ownerEmail: { $ifNull: [ { $arrayElemAt: ['$owner.email', 0] }, null ] },
-                participantCount: { $size: { $filter: { input: '$applications', as: 'app', cond: { $eq: ['$$app.status', 1] } } } }
-            }},
-            { $project: { owner: 0, applications: 0 } }
-        ]).toArray();
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
-        res.json(events);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to fetch events' });
-    }
+    const events = await db.collection('events').aggregate([
+      {
+        $match: {
+          $expr: {
+            $gt: [{ $toDate: "$date" }, todayEnd]
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: 'id',
+          as: 'owner'
+        }
+      },
+      {
+        $lookup: {
+          from: 'applications',
+          localField: 'id',
+          foreignField: 'eventId',
+          as: 'applications'
+        }
+      },
+      {
+        $addFields: {
+          ownerEmail: {
+            $ifNull: [{ $arrayElemAt: ['$owner.email', 0] }, null]
+          },
+          participantCount: {
+            $size: {
+              $filter: {
+                input: '$applications',
+                as: 'app',
+                cond: { $eq: ['$$app.status', 1] }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          owner: 0,
+          applications: 0
+        }
+      }
+    ]).toArray();
+
+    res.json(events);
+  } catch (err) {
+    console.error("🔥 /events error:", err);
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
 });
 
 
