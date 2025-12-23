@@ -1,4 +1,4 @@
-const API_URL = 'process.env.NEXT_PUBLIC_API_URL';
+const API_URL = 'https://ntou-event-registration-system2-hggmckqj8-kafoos-projects.vercel.app';
 
 // Check if user is logged in
 const token = localStorage.getItem('authToken');

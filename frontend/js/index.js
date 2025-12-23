@@ -1,4 +1,4 @@
-const API_URL = 'process.env.NEXT_PUBLIC_API_URL';
+const API_URL = 'https://ntou-event-registration-system2-hggmckqj8-kafoos-projects.vercel.app';
 
 const headerButtons = document.getElementById('headerButtons');
 const eventsList = document.getElementById('eventsList');
