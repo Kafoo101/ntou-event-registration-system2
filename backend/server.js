@@ -26,9 +26,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:3000'
 ];
 
-app.use(cors({
-    origin: 'https://ntou-event-registration-system2-8jgksj4n3-kafoos-projects.vercel.app'
-}));
+app.use(cors());
 // Connect to MongoDB
 async function connectDB() {
     try {
