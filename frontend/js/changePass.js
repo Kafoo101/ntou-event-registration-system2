@@ -1,4 +1,4 @@
-const API_URL = '';
+const API_URL = 'process.env.NEXT_PUBLIC_API_URL';
 const errorMsg = document.getElementById('errorMsg');
 const successMsg = document.getElementById('successMsg');
 const nicknameInput = document.getElementById('nickname');

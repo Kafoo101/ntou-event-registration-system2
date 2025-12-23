@@ -1,4 +1,4 @@
-const API_URL = '';
+const API_URL = 'process.env.NEXT_PUBLIC_API_URL';
 
 // Check if user is logged in
 const token = localStorage.getItem('authToken');
