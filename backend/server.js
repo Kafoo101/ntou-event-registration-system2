@@ -245,7 +245,7 @@ app.get('/users', async (req, res) => {
 // ---------- Get ongoing events ----------
 app.get('/events', async (req, res) => {
   try {
-    const db = await getDB();
+    const db = await connectDB();
 
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
