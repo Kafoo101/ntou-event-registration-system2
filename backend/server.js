@@ -26,13 +26,17 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function(origin, callback){
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = `CORS policy does not allow access from this origin.`;
-      return callback(new Error(msg), false);
+  origin: function (origin, callback) {
+    console.log("Incoming origin:", origin);
+    console.log("Allowed origins:", allowedOrigins);
+
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
-    return callback(null, true);
+
+    return callback(new Error(`CORS blocked: ${origin}`), false);
   }
 }));
 // Connect to MongoDB
