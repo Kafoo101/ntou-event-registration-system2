@@ -278,8 +278,8 @@ app.get('/events', async (req, res) => {
         
         res.json(events);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to fetch events' });
+        console.error('Fetch events error:', err);
+        res.status(500).json({ error: 'Failed to fetch events', details: err.message });
     }
 });
 
