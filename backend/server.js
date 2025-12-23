@@ -629,11 +629,15 @@ app.post('/events', verifyToken, upload.single('image'), async (req, res) => {
 
     // Get next event ID
     const counter = await db.collection('counters').findOneAndUpdate(
-      { _id: 'eventId' },
-      { $inc: { seq: 1 } },
-      { returnDocument: 'after', upsert: true }
+    { _id: 'eventId' },
+    { 
+        $inc: { seq: 1 },
+        $setOnInsert: { seq: 0 } // initialize seq if the document is new
+    },
+    { returnDocument: 'after', upsert: true }
     );
-    const eventId = counter.value?.seq || 1;
+
+    const eventId = counter.value.seq;
 
     let imageUrl = null;
     if (req.file) {
