@@ -7,6 +7,12 @@ const bcrypt = require('bcrypt');
 const upload = require("./upload");
 const { sendEmail } = require("./email");
 const { MongoClient, ObjectId } = require('mongodb');
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_KEY,
+  api_secret: process.env.CLOUD_SECRET
+});
 
 const SALT_ROUNDS = 10;
 const SECRET_KEY = process.env.SECRET_KEY || '9e7ae63e6d9e3654139277c630af4973';
@@ -665,150 +671,156 @@ app.get('/eventParticipants/:id', verifyToken, async (req, res) => {
 
 // ---------- Create new event ----------
 app.post('/events', verifyToken, upload.single('image'), async (req, res) => {
-    try {
-        const db = await connectDB();
-        const { title, date, location, permission, participationLimit, description } = req.body;
+  try {
+    const db = await connectDB();
+    const { title, date, location, permission, participationLimit, description } = req.body;
 
-        if (!title || !date || !location || !participationLimit) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
+    if (!title || !date || !location || !participationLimit) 
+      return res.status(400).json({ error: 'Missing required fields' });
 
-        // Get next event ID
-        const counter = await db.collection('counters').findOneAndUpdate(
-            { _id: 'eventId' },
-            { $inc: { seq: 1 } },
-            { returnDocument: 'after', upsert: true }
+    // Get next event ID
+    const counter = await db.collection('counters').findOneAndUpdate(
+      { _id: 'eventId' },
+      { $inc: { seq: 1 } },
+      { returnDocument: 'after', upsert: true }
+    );
+    const eventId = counter.value?.seq || 1;
+
+    let imageUrl = null;
+    if (req.file) {
+      // Upload to Cloudinary from memory buffer
+      imageUrl = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'events' },
+          (error, result) => error ? reject(error) : resolve(result.secure_url)
         );
-
-        const eventId = counter.value?.seq || (await db.collection('counters').findOne({ _id: 'eventId' })).seq;
-
-        const newEvent = {
-            id: eventId,
-            title,
-            date,
-            location,
-            permission,
-            participationLimit: parseInt(participationLimit),
-            description: description || '',
-            imagePath: req.file ? `uploads/${req.file.filename}` : null,
-            createdBy: req.user.id,
-            createdAt: new Date().toISOString()
-        };
-
-        const result = await db.collection('events').insertOne(newEvent);
-        console.log('Event created with id:', eventId);
-        res.json({ message: 'Event created successfully', id: eventId, ...newEvent });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to create event' });
+        stream.end(req.file.buffer);
+      });
     }
+
+    const newEvent = {
+      id: eventId,
+      title,
+      date,
+      location,
+      permission,
+      participationLimit: parseInt(participationLimit),
+      description: description || '',
+      imagePath: imageUrl,
+      createdBy: req.user.id,
+      createdAt: new Date().toISOString()
+    };
+
+    await db.collection('events').insertOne(newEvent);
+    console.log('Event created with id:', eventId);
+    res.json({ message: 'Event created successfully', id: eventId, ...newEvent });
+
+  } catch (err) {
+    console.error("🔥 /events POST error:", err);
+    res.status(500).json({ error: 'Failed to create event' });
+  }
 });
 
 // ---------- Update event ----------
 app.put('/events/:id', verifyToken, upload.single('image'), async (req, res) => {
-    try {
-        const db = await connectDB();
-        const { id } = req.params;
-        const { title, date, location, permission, participationLimit, description, removeImage } = req.body;
-        const userId = req.user.id;
-        const userRole = req.user.role;
-        
-        if (!title || !date || !location) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
+  try {
+    const db = await connectDB();
+    const { id } = req.params;
+    const { title, date, location, permission, participationLimit, description, removeImage } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
 
-        const event = await db.collection('events').findOne({ id: parseInt(id) });
-        if (!event) return res.status(404).json({ error: 'Event not found' });
-        
-        // Ownership check: Advanced Users can only edit their own events
-        if (userRole === 'Advanced User' && event.createdBy !== parseInt(userId)) {
-            return res.status(403).json({ error: 'You do not have permission to edit this event. You can only edit events you created.' });
-        }
-        const oldLimit = event.participationLimit;
-        const oldDate = event.date;
-        const newLimit = parseInt(participationLimit);
+    if (!title || !date || !location)
+      return res.status(400).json({ error: 'Missing required fields' });
 
-        const currentCount = await db.collection('applications').countDocuments({
-            eventId: parseInt(id),
-            status: 1
-        });
-        if (currentCount > newLimit) {
-            return res.status(400).json({
-                error: `Cannot reduce participation limit below current confirmed participants (${currentCount})`
-            });
-        }
+    const event = await db.collection('events').findOne({ id: parseInt(id) });
+    if (!event) return res.status(404).json({ error: 'Event not found' });
 
-        const updateData = {
-            title,
-            date,
-            location,
-            permission,
-            participationLimit: parseInt(participationLimit),
-            description: description || '',
-            updatedAt: new Date().toISOString()
-        };
-        if (req.file) {
-            updateData.imagePath = `uploads/${req.file.filename}`;
-        } else if (removeImage === 'true') {
-            updateData.imagePath = null;
-        }
-        
-        const result = await db.collection('events').findOneAndUpdate(
-            { id: parseInt(id) },
-            { $set: updateData },
-            { returnDocument: 'after' }
+    if (userRole === 'Advanced User' && event.createdBy !== parseInt(userId))
+      return res.status(403).json({ error: 'You can only edit events you created.' });
+
+    const oldLimit = event.participationLimit;
+    const oldDate = event.date;
+    const newLimit = parseInt(participationLimit);
+
+    const currentCount = await db.collection('applications').countDocuments({
+      eventId: parseInt(id),
+      status: 1
+    });
+    if (currentCount > newLimit)
+      return res.status(400).json({ error: `Cannot reduce participation limit below current confirmed participants (${currentCount})` });
+
+    const updateData = {
+      title,
+      date,
+      location,
+      permission,
+      participationLimit: newLimit,
+      description: description || '',
+      updatedAt: new Date().toISOString()
+    };
+
+    // Handle image
+    if (req.file) {
+      // Upload new image to Cloudinary
+      const imageUrl = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'events' },
+          (error, result) => error ? reject(error) : resolve(result.secure_url)
         );
-
-        const slotsAdded = newLimit - oldLimit;
-        if (slotsAdded > 0) {
-            const waitingUsers = await db.collection('applications')
-                .find({ eventId: parseInt(id), status: 2 })
-                .sort({ appliedAt: 1 })  // oldest first
-                .limit(slotsAdded)
-                .toArray();
-
-            if (waitingUsers.length > 0) {
-                const updatePromises = waitingUsers.map(u =>
-                    db.collection('applications').updateOne(
-                        { _id: u._id },
-                        { $set: { status: 1 } }
-                    )
-                );
-                await Promise.all(updatePromises);
-            }
-        }
-
-        // If date changed, send notifications
-        if (oldDate !== date) {
-            // Fetch all userIds of participants in this event with status = 1
-            const participants = await db.collection('applications').find({
-                eventId: parseInt(id),
-                status: 1
-            }).toArray();
-            const participantIds = participants.map(p => p.userId);
-
-            // Fetch emails of those participants who are Administrator or Advanced User
-            const usersToNotify = await db.collection('users').find({
-                id: { $in: participantIds },
-                role: { $in: ['Administrator', 'Advanced User'] }
-            }).toArray();
-
-            // Send emails in parallel
-            const emailPromises = usersToNotify.map(user => {
-                const subject = `Event "${title}" Date Changed`;
-                const body = `Hello ${user.name},\n\nThe event "${title}" has a new date: ${date} (previous date was ${oldDate}).\nPlease take note.\n\nBest regards,\nEvent System`;
-
-                sendEmail(user.email, subject, body);
-            });
-            await Promise.all(emailPromises);
-        }
-
-        // Return the updated document under an `event` key instead of spreading
-        res.json({ message: 'Event updated successfully', event: result.value });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to update event' });
+        stream.end(req.file.buffer);
+      });
+      updateData.imagePath = imageUrl;
+    } else if (removeImage === 'true') {
+      updateData.imagePath = null;
     }
+
+    const result = await db.collection('events').findOneAndUpdate(
+      { id: parseInt(id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+
+    // Handle waiting list if participation limit increased
+    const slotsAdded = newLimit - oldLimit;
+    if (slotsAdded > 0) {
+      const waitingUsers = await db.collection('applications')
+        .find({ eventId: parseInt(id), status: 2 })
+        .sort({ appliedAt: 1 })
+        .limit(slotsAdded)
+        .toArray();
+
+      if (waitingUsers.length > 0) {
+        await Promise.all(waitingUsers.map(u =>
+          db.collection('applications').updateOne({ _id: u._id }, { $set: { status: 1 } })
+        ));
+      }
+    }
+
+    // Notify participants if date changed
+    if (oldDate !== date) {
+      const participants = await db.collection('applications')
+        .find({ eventId: parseInt(id), status: 1 }).toArray();
+      const participantIds = participants.map(p => p.userId);
+
+      const usersToNotify = await db.collection('users').find({
+        id: { $in: participantIds },
+        role: { $in: ['Administrator', 'Advanced User'] }
+      }).toArray();
+
+      await Promise.all(usersToNotify.map(user => {
+        const subject = `Event "${title}" Date Changed`;
+        const body = `Hello ${user.name},\n\nThe event "${title}" has a new date: ${date} (previous date was ${oldDate}).\nPlease take note.\n\nBest regards,\nEvent System`;
+        sendEmail(user.email, subject, body);
+      }));
+    }
+
+    res.json({ message: 'Event updated successfully', event: result.value });
+
+  } catch (err) {
+    console.error("🔥 /events PUT error:", err);
+    res.status(500).json({ error: 'Failed to update event' });
+  }
 });
 
 // ----------- Edit User -------------
