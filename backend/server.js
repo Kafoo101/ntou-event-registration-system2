@@ -511,64 +511,41 @@ app.get('/applications', verifyToken, async (req, res) => {
 
 //----------- Get History ----------
 app.get('/history', verifyToken, async (req, res) => {
-    try {
-        const db = await connectDB();
-        const now = new Date();
-        const history = await db.collection('events').aggregate([
-            { 
-                $lookup: { from: "applications", localField: "id", foreignField: "eventId", as: "apps" }
-            },
-            { 
-                $match: { apps: { $elemMatch: { userEmail: req.user.email, status: 1 } },$expr: { $lt: [ { $toDate: "$date" }, now ] }}
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'createdBy',
-                    foreignField: 'id',
-                    as: 'owner'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'applications',
-                    localField: 'id',
-                    foreignField: 'eventId',
-                    as: 'applications'
-                }
-            },
-            {
-                $addFields: {
-                    ownerEmail: {
-                        $ifNull: [
-                            { $arrayElemAt: ['$owner.email', 0] },
-                            null
-                        ]
-                    },
-                    participantCount: {
-                        $size: {
-                            $filter: {
-                                input: '$applications',
-                                as: 'app',
-                                cond: { $eq: ['$$app.status', 1] }
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    owner: 0,
-                    applications: 0,
-                    apps: 0
-                }
-            }
-        ]).toArray();
-        res.json(history);
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch history' });
-    }
+  try {
+    const db = await connectDB();
+
+    // Step 1: Get the user's ID from email
+    const user = await db.collection('users').findOne({ email: req.user.email });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Step 2: Find applications for this user with status=1
+    const userApplications = await db.collection('applications')
+      .find({ userId: user.id, status: 1 })
+      .toArray();
+
+    const eventIds = userApplications.map(a => a.eventId);
+    if (eventIds.length === 0) return res.json([]); // no history
+
+    // Step 3: Fetch events with those IDs and past date
+    const now = new Date();
+    const events = await db.collection('events').aggregate([
+      { $match: { id: { $in: eventIds }, $expr: { $lt: [ { $toDate: "$date" }, now ] } } },
+      { $lookup: { from: 'users', localField: 'createdBy', foreignField: 'id', as: 'owner' } },
+      { $lookup: { from: 'applications', localField: 'id', foreignField: 'eventId', as: 'applications' } },
+      { $addFields: {
+          ownerEmail: { $ifNull: [ { $arrayElemAt: ['$owner.email', 0] }, null ] },
+          participantCount: { $size: { $filter: { input: '$applications', as: 'app', cond: { $eq: ['$$app.status', 1] } } } }
+      }},
+      { $project: { owner: 0, applications: 0 } }
+    ]).toArray();
+
+    res.json(events);
+  } catch (err) {
+    console.error("🔥 /history error:", err);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
 });
+
 
 //----------- Get Past Events ----------\
 app.get('/past', async (req, res) => {
