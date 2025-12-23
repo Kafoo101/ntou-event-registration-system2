@@ -1,4 +1,4 @@
-const API_URL = '';
+const API_URL = 'https://ntou-event-registration-system2-five.vercel.app/';
 
 const regiForm = document.getElementById('regiForm');
 const submitBtn = document.getElementById('submit-btn');

@@ -13,7 +13,6 @@ const SECRET_KEY = process.env.SECRET_KEY || '9e7ae63e6d9e3654139277c630af4973';
 const app = express();
 const port =  process.env.PORT || 5500;
 
-app.use(cors());
 app.use(express.json());
 
 const client = new MongoClient(process.env.MONGO_URI);
@@ -23,7 +22,7 @@ let db;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5500',
-  process.env.FRONTEND_URL
+  'https://ntou-event-registration-system2-five.vercel.app'
 ];
 
 app.use(cors({
