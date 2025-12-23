@@ -30,12 +30,10 @@ async function fetchNextId() {
 
 async function registerUser(nickname, emailOrPhone, password, occupation) {
     try {
-        const id = await fetchNextId(); // get incremental ID
-
         const response = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, nickname, email_or_phone: emailOrPhone, password, occupation })
+            body: JSON.stringify({ nickname, email_or_phone: emailOrPhone, password, occupation })
         });
 
         const data = await response.json();

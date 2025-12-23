@@ -96,7 +96,7 @@ app.get('/nextId', async (req, res) => {
 app.post('/register', async (req, res) => {
     try {
         const db = await connectDB();
-        const { id, nickname, email_or_phone, password, occupation } = req.body;
+        const { nickname, email_or_phone, password, occupation } = req.body;
 
         // Check if email or phone already exists
         const existingUser = await db.collection('users').findOne({ email: email_or_phone });
@@ -105,7 +105,8 @@ app.post('/register', async (req, res) => {
         }
 
         // Get next user ID
-        if (!id || !nickname || !email_or_phone || !password) {
+        const userId = Date.now() + Math.floor(Math.random() * 1000);
+        if (!nickname || !email_or_phone || !password) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -114,7 +115,7 @@ app.post('/register', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
         const newUser = {
-            id,
+            id: userId,
             name: nickname,
             email: email_or_phone,
             password_hash: hashedPassword,
@@ -628,14 +629,7 @@ app.post('/events', verifyToken, upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
 
     // Get next event ID
-    const counter = await db.collection('counters').findOneAndUpdate(
-    { _id: 'eventId' },
-    { $inc: { seq: 1 } },
-    { returnDocument: 'after', upsert: true }
-    );
-
-    const eventId = counter.value?.seq ?? 1;
-
+    const eventId = Date.now() + Math.floor(Math.random() * 1000);
 
     let imageUrl = null;
     if (req.file) {
