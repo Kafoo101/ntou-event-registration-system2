@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>海大活動報名系統</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/index.js" defer></script>
+</head>
+<body>
+  
+  <header>
+    <div id="hamburgerMenu" class="hamburger">☰</div>
+
+    <!-- Slide-Out Panel -->
+    <div id="sidePanel" class="side-panel">
+      <div class="side-panel-header">
+        <h2><font color="white">Menu</font></h2>
+        <span id="closeSidePanel" class="close-btn">×</span>
+      </div>
+      <hr>
+
+      <ul class="side-panel-list" id="sideMenu"></ul>
+    </div>
+    
+    <a href="index.html" style="text-decoration: none;" class="logo-header-link">
+      <div class="logo-header">
+        <img src="1741574543097.png" alt="NTOU Logo" class="logo-image">
+        <div class="logo-text">
+          <div class="logo-main-text">國立台灣海洋大學 活動報名系統</div>
+          <div class="logo-sub-text">National Taiwan Ocean University Event Registration System</div>
+        </div>
+      </div>
+    </a>
+    <div class="search-section" style="flex: 1; text-align: center; margin: 0 20px; display: flex; justify-content: center; gap: 8px; align-items: center;">
+      <input type="text" id="searchInput" placeholder="Search events by title..." style="padding: 10px 15px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 4px; width: 280px;">
+      <button id="searchBtn" style="background: var(--accent); border: none; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-weight: 500;" onclick="triggerSearch()">Search</button>
+      <button id="clearBtn"style="background: #64748b; border: none; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-weight: 500;"onclick="clearSearch()">Clear</button>
+    </div>
+    <div class="buttons" id="headerButtons">
+      <a href="signin.html"><button id="loginBtn">Sign In</button></a>
+      <a href="register.html"><button class="ghost" id="registerBtn">Register</button></a>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <h2 id="pageTitle">活動列表 (Events)</h2>
+
+      <div class="sort-controls">
+        <div class="ddl">
+          <div class="ddlselected" id="ddlCat">Name</div>
+          <ul class="ddloptions">
+            <li class="ddlperoption" data-value="name">Name</li>
+            <li class="ddlperoption" data-value="date">Date</li>
+          </ul>
+        </div>
+
+        <div class="ddl">
+          <div class="ddlselected" id="ddlOrd">Ascending</div>
+          <ul class="ddloptions">
+            <li class="ddlperoption" data-sort="asc">Ascending</li>
+            <li class="ddlperoption" data-sort="dsc">Descending</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div id="eventsList">
+      <!-- Events will be loaded dynamically -->
+    </div>
+  </main>
+
+</body>
+</html>

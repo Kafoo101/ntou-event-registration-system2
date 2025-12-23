@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Details</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/event.js" defer></script>
+</head>
+<body>
+  <header>
+    
+    <a href="index.html" style="text-decoration: none;" class="logo-header-link">
+      <div class="logo-header">
+        <img src="1741574543097.png" alt="NTOU Logo" class="logo-image">
+        <div class="logo-text">
+          <div class="logo-main-text">國立台灣海洋大學 活動報名系統</div>
+          <div class="logo-sub-text">National Taiwan Ocean University Event Registration System</div>
+        </div>
+      </div>
+    </a>
+    <div class="buttons">
+      <a href="index.html"><button class="ghost">Back to Home</button></a>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <h2 id="eventTitle">Event Details</h2>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="success-msg" id="successMsg"></div>
+
+    <div id="eventContainer" class="event-detail-container">
+      <!-- Event details rendered here -->
+    </div>
+
+    <div id="eventParticipantContainer" class="event-detail-container" style="display: none">
+      <!-- Event participant rendered here -->
+    </div>
+
+    <div id="message" style="display:none; margin-top:12px;"></div>
+  </main>
+
+</body>
+</html>

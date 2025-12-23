@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Events</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/manage_events.js" defer></script>
+</head>
+<body>
+  
+  <header>
+    <a href="index.html" style="text-decoration: none;" class="logo-header-link">
+      <div class="logo-header">
+        <img src="1741574543097.png" alt="NTOU Logo" class="logo-image">
+        <div class="logo-text">
+          <div class="logo-main-text">國立台灣海洋大學 活動報名系統</div>
+          <div class="logo-sub-text">National Taiwan Ocean University Event Registration System</div>
+        </div>
+      </div>
+    </a>
+    <div class="search-section" style="flex: 1; text-align: center; margin: 0 20px; display: flex; justify-content: center; gap: 8px; align-items: center;">
+      <input type="text" id="searchInput" placeholder="Search events by title..." style="padding: 10px 15px; font-size: 14px; border: 1px solid var(--border-color); border-radius: 4px; width: 280px;">
+      <button id="searchBtn" style="background: var(--accent); border: none; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-weight: 500;" onclick="triggerSearch()">Search</button>
+      <button id="clearBtn"style="background: #64748b; border: none; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-weight: 500;"onclick="clearSearch()">Clear</button>
+    </div>
+    <div class="buttons">
+      <a href="index.html"><button class="ghost">Back to Home</button></a>
+      <button id="logoutBtn" class="ghost">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <h2>管理活動 (Manage Events)</h2>
+      <button id="addEventBtn" class="submit-btn">+ Add New Event</button>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="success-msg" id="successMsg"></div>
+
+    <!-- Add/Edit Event Form -->
+    <div id="eventFormContainer" class="form-section" style="display: none;">
+      <div class="form-content">
+        <h3 id="formTitle">Add New Event</h3>
+        <form id="eventForm">
+          <label>Event Title:</label>
+          <input type="text" id="eventTitle" required>
+          
+          <label>Event Date:</label>
+          <div style="position: relative;">
+            <input type="date" id="eventDate" required style="width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); box-sizing: border-box; font-family: inherit; cursor: pointer;">
+          </div>
+          
+          <label>Location:</label>
+          <input type="text" id="eventLocation" required>
+
+          <label>Participants:</label><br>
+          <span style="display: inline-block; margin-bottom: 6px;" id="participantSpan"></span><br>
+
+          <label>Participant Limit:</label>
+          <input type="number" id="eventParticipationLimit" min="1" required>
+          
+          <label>Description (Optional):</label>
+          <textarea id="eventDescription" rows="4"></textarea>
+
+          <label>Image (Optional):</label>
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 20px;">
+              <input type="file" id="eventImage" accept="image/*">
+
+              <div id="checkBoxLabel" style="display:none; display: flex; align-items: center; gap: 4px;">
+                  <input type="checkbox" id="removeImageCheckbox" style="margin:0; padding:0; width:auto; height:auto;">
+                  <span style="margin:0; padding:0; color:#94a3b8;">Remove current image</span>
+              </div>
+
+              <img id="eventImagePreview" src="" alt="" style="max-width:200px; display:none; border-radius:6px;" />
+          </div>
+          
+          <div class="button-group">
+            <button type="submit" class="submit-btn" id="submitEventBtn">Save Event</button>
+            <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Events List -->
+    <div id="eventsList" class="events-container">
+      <!-- Events will be loaded here -->
+    </div>
+  </main>
+
+</body>
+</html>

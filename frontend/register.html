@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/register.js" defer></script>
+</head>
+<body>
+
+  <header class="header-centered">
+    <div class="logo-header">
+      <img src="1741574543097.png" alt="NTOU Logo" class="logo-image">
+      <div class="logo-text">
+        <div class="logo-main-text">國立台灣海洋大學 活動報名系統</div>
+        <div class="logo-sub-text">National Taiwan Ocean University Event Registration System</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="form-container">
+    <div class="form-content">
+        <h3>Register</h3>
+
+        <div class="error-msg" id="errorMsg"></div>
+        <div class="success-msg" id="successMsg"></div>
+
+        <form id="regiForm">
+            <div id="nicknameField">
+                <label>Nickname:</label>
+                <input type="text" id="nickname" required>
+            </div>
+            <label>Email:</label>
+            <input type="text" id="emailOrPhone" required>
+            <label>Password:</label>
+            <div class="password-toggle-container">
+                <input type="password" id="password" required>
+                <span id="togglePassword" class="password-toggle-icon">👁️</span>
+            </div>
+            <label>Occupation:</label>
+            <div class="ddl">
+              <div class="ddlselected" id="ddlOrd">Teacher</div>
+              <ul class="ddloptions" id="occupation">
+                <li class="ddlperoption" value="Teacher">Teacher</li>
+                <li class="ddlperoption" value="Student">Student</li>
+              </ul>
+            </div>
+            <p class="alt-link">Already have an account? <a id="noAccountLink" href="signin.html">Sign in</a></p>
+            <button type="submit" class="submit-btn" id="submit-btn">Register</button>
+        </form>
+        <div class="back-home">
+          <a href="index.html" class="back-btn">← Back to Home</a>
+        </div>
+    </div>
+  </main>
+  
+</body>
+</html>
