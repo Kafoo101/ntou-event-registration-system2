@@ -1,4 +1,4 @@
-const API_URL = 'https://ntou-event-registration-system2.vercel.app';
+const API_URL = '';
 
 // Check if user is logged in
 const token = localStorage.getItem('authToken');

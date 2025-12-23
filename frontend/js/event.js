@@ -1,4 +1,4 @@
-const API_URL = 'https://ntou-event-registration-system2.vercel.app';
+const API_URL = '';
 const errorMsg = document.getElementById('errorMsg');
 const successMsg = document.getElementById('successMsg');
 
