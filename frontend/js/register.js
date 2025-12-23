@@ -16,18 +16,6 @@ function showSuccess(msg) {
     errorMsg.style.display = 'none';
 }
 
-async function fetchNextId() {
-    try {
-        const response = await fetch(`${API_URL}/nextId`); // backend endpoint for next ID
-        const data = await response.json();
-        return data.nextId;
-    } catch (err) {
-        console.error(err);
-        showError('Could not fetch next ID.');
-        throw err;
-    }
-}
-
 async function registerUser(nickname, emailOrPhone, password, occupation) {
     try {
         const response = await fetch(`${API_URL}/register`, {

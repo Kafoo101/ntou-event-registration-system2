@@ -67,31 +67,6 @@ connectDB().then(() => {
     console.error("❌ Could not start server:", err);
 });
 
-// ---------- Endpoint to get next incremental ID ----------
-app.get('/nextId', async (req, res) => {
-    try {
-        const db = await connectDB();
-        const result = await db.collection('counters').findOneAndUpdate(
-            { _id: 'userId' },
-            { $inc: { seq: 1 } },
-            { returnDocument: 'after', upsert: true }
-        );
-
-        let nextId;
-        if (result.value && typeof result.value.seq === 'number') {
-            nextId = result.value.seq;
-        } else {
-            const doc = await db.collection('counters').findOne({ _id: 'userId' });
-            nextId = doc.seq;
-        }
-
-        res.json({ nextId });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to get next ID' });
-    }
-});
-
 // ---------- Register endpoint ----------
 app.post('/register', async (req, res) => {
     try {
